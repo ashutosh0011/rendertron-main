@@ -1,25 +1,18 @@
-FROM node:14.11.0-stretch
+FROM node:13-slim
 
-RUN apt-get update \
-    && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
-      --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt dist-upgrade -y && \
+	apt install -y wget gnupg2 && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
+    apt-get update && apt-get -y install google-chrome-stable
 
-# This directoty will store cached files as specified in the config.json.
-# If you haven't defined the cacheConfig.snapshotDir property you can remove the following line
-RUN mkdir /cache
+ADD ./ /srv
 
-RUN git clone https://github.com/GoogleChrome/rendertron.git
+RUN npm --prefix /srv install && \
+    npm --prefix /srv run build && \
+    rm -Rf /tmp/* && \
+    rm -Rf /var/lib/apt/lists/*
 
-WORKDIR /rendertron
+WORKDIR /srv
 
-RUN npm install && npm run build
-
-EXPOSE 3000
-
-CMD ["npm", "run", "start"]
-
+CMD npm run start
